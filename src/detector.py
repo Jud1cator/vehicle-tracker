@@ -25,8 +25,7 @@ class Detector:
         self.input_name = list(self.exec_net.requests[0].input_blobs)[0]
 
     def detect_vehicles(self, frame):
-        frame = cv2.resize(
-            frame, self.input_shape, interpolation=cv2.INTER_AREA)
+        frame = cv2.resize(frame, self.input_shape)
         blob = cv2.dnn.blobFromImage(
             frame, size=self.input_shape, ddepth=cv2.CV_8U)
         output = self.exec_net.infer({self.input_name: blob})

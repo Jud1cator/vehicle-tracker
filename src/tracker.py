@@ -22,6 +22,14 @@ class Tracker:
         self.ftl = ftl
         self.tracks = dict()
         self.new_track_id = 0
+        self.colors = [
+            (0, 0, 255),
+            (0, 128, 255),
+            (0, 255, 255),
+            (0, 255, 0),
+            (255, 255, 0),
+            (255, 0, 255)
+        ]
 
     def update(self, detections):
         """
@@ -98,6 +106,7 @@ class Tracker:
             if data['dead_frames'] != 0:
                 continue
             # Draw current bounding box
+            color = self.colors[track_id % len(self.colors)]
             x_min, y_min, x_max, y_max = data['last_bbox']
             cv2.rectangle(
                 frame,
@@ -105,7 +114,7 @@ class Tracker:
                 # (x_max, y_max + IMG_PADDING[1]),
                 (x_min, y_min),
                 (x_max, y_max),
-                (0, 255, 0), 2
+                color, 2
             )
             # Draw track
             for i in range(1, len(data['points'])):
@@ -117,6 +126,6 @@ class Tracker:
                     # (x2, y2 + IMG_PADDING[1]),
                     (x1, y1),
                     (x2, y2),
-                    (0, 255, 0), 2
+                    color, 2
                 )
         return frame
