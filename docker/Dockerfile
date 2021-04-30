@@ -4,9 +4,10 @@ USER root
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-#        build-essential cmake \
-#        libgtk-3-dev \
-#        libboost-all-dev \
+        build-essential cmake \
+        ffmpeg \
+        libgtk-3-dev \
+        libboost-all-dev \
         python3-pip \
         python3-setuptools \
     && rm -rf /var/lib/apt/lists/*
