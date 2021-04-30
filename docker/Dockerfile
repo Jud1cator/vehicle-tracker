@@ -23,5 +23,3 @@ COPY ./src /src
 COPY ./model /model
 
 COPY ./video /video
-
-CMD tail -f /dev/null
