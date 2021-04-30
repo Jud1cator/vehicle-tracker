@@ -12,11 +12,11 @@ Installation guide for the latest version is here: https://docs.docker.com/compo
 3. Place your video in `video` folder if you want to try custom video and change `src/configs/sample_config.yml` accordingly.
 4. Open terminal in `docker` folder and run:
 
-`docker-compose up --build -d`
+`docker-compose up --build`
 
-Wait until container is built. It may take a while. Then run:
+Wait until container is built. It may take a while. Once build is finished, run:
 
-`docker exec -it vehicle_tracker bash`
+`docker-compose run vehicle_tracker`
 
 to get inside the container. Once you are in, run
 
