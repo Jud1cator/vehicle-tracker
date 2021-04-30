@@ -1,22 +1,35 @@
 import cv2
 import numpy as np
 
-from utils import get_bbox, IMG_PADDING, compute_iou
+from utils import get_bbox, compute_iou
 
 
 class Tracker:
-    def __init__(self, frame_shape, max_search_dist=-0.2, ttl=10):
+    def __init__(self, frame_shape, max_search_dist=-0.2, ftl=10):
+        """
+        Create instance of Tracker class to track ouputs of detection network
+        on subsequent frames.
+        :param frame_shape: (height, width) of the input frame
+        :type frame_shape: Tuple
+        :param max_search_dist: maximum (inverted minimum) IoU for frames to
+        be considered in search for minimum
+        :type max_search_dist: float
+        :param ftl: Frames To Live - number of frames track will persist
+        :type ftl: int
+        """
         self.frame_shape = frame_shape
         self.max_search_dist = max_search_dist
-        self.ttl = ttl
+        self.ftl = ftl
         self.tracks = dict()
         self.new_track_id = 0
 
     def update(self, detections):
         """
         Update current tracks with detections from the next frame.
-        Uses distance to estimated trajectory as metric for matching boxes with tracks.
-        :param detections: list of bounding boxes of detected vehicles on the current frame
+        Uses distance to estimated trajectory as metric for matching boxes with
+        tracks.
+        :param detections: list of bounding boxes of detected vehicles on the
+        current frame
         :type detections: List
         """
         distances = np.zeros((len(self.tracks), len(detections)))
@@ -55,7 +68,7 @@ class Tracker:
             if i in updated_tracks:
                 continue
             self.tracks[mapping[i]]['dead_frames'] += 1
-            if self.tracks[mapping[i]]['dead_frames'] > self.ttl:
+            if self.tracks[mapping[i]]['dead_frames'] > self.ftl:
                 self.tracks.pop(mapping[i])
 
         # Create new tracks for unassigned detections
@@ -88,8 +101,10 @@ class Tracker:
             x_min, y_min, x_max, y_max = data['last_bbox']
             cv2.rectangle(
                 frame,
-                (x_min, y_min + IMG_PADDING[1]),
-                (x_max, y_max + IMG_PADDING[1]),
+                # (x_min, y_min + IMG_PADDING[1]),
+                # (x_max, y_max + IMG_PADDING[1]),
+                (x_min, y_min),
+                (x_max, y_max),
                 (0, 255, 0), 2
             )
             # Draw track
@@ -98,8 +113,10 @@ class Tracker:
                 x2, y2 = data['points'][i][0], data['points'][i][1]
                 cv2.line(
                     frame,
-                    (x1, y1 + IMG_PADDING[1]),
-                    (x2, y2 + IMG_PADDING[1]),
+                    # (x1, y1 + IMG_PADDING[1]),
+                    # (x2, y2 + IMG_PADDING[1]),
+                    (x1, y1),
+                    (x2, y2),
                     (0, 255, 0), 2
                 )
         return frame

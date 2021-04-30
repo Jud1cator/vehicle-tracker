@@ -1,0 +1,15 @@
+input:
+  path: "/video/video.mkv"
+output:
+  fourcc: "mp4v"
+  path: "/output/output.mp4"
+  fps: 15
+detector:
+  xml: "/model/vehicle-detection-0200.xml"
+  bin: "/model/vehicle-detection-0200.bin"
+  device: "CPU"
+  input_shape: [256, 256]
+  confidence_threshold: 0.8
+tracker:
+  max_search_dist: -0.2
+  ftl: 10
