@@ -1,10 +1,11 @@
 import cv2
+import numpy as np
 
-from utils import get_bboxes, IMG_PADDING
+from utils import get_bbox, IMG_PADDING, compute_iou
 
 
 class Tracker:
-    def __init__(self, frame_shape, max_search_dist=100, ttl=15):
+    def __init__(self, frame_shape, max_search_dist=-0.2, ttl=10):
         self.frame_shape = frame_shape
         self.max_search_dist = max_search_dist
         self.ttl = ttl
@@ -14,52 +15,55 @@ class Tracker:
     def update(self, detections):
         """
         Update current tracks with detections from the next frame.
+        Uses distance to estimated trajectory as metric for matching boxes with tracks.
         :param detections: list of bounding boxes of detected vehicles on the current frame
         :type detections: List
         """
-        unassigned_detections = detections
-        to_delete_idxs = []
+        distances = np.zeros((len(self.tracks), len(detections)))
+        mapping = dict(zip(range(len(self.tracks)), self.tracks.keys()))
+        updated_tracks = []
+        assigned_detections = []
 
-        for track_id, data in self.tracks.items():
-            # If track was dead for sufficient number of frames, delete it
-            if data['dead_frames'] > self.ttl:
-                to_delete_idxs.append(track_id)
-                continue
+        # Build matrix of distances between current detections and tracks
+        for i in range(len(self.tracks)):
+            x, y = self.tracks[mapping[i]]['points'][-1]
+            track_bbox = self.tracks[mapping[i]]['last_bbox']
+            for j in range(len(detections)):
+                det_bbox = get_bbox(
+                    detections[j], self.frame_shape)
+                distances[i, j] = -compute_iou(track_bbox, det_bbox)
 
-            x, y = data['points'][-1]
-            best_det_idx = -1
-            best_dist = self.max_search_dist
-            best_cp = (0, 0)
-            best_bbox = (0, 0, 0, 0)
-
-            for i in range(len(unassigned_detections)):
-                x_min, y_min, x_max, y_max = get_bboxes(
-                    unassigned_detections[i], self.frame_shape)
+        # Assign detections to closest tracks
+        if len(self.tracks) > 0 and len(detections) > 0:
+            while np.min(distances) < self.max_search_dist:
+                track_idx, det_idx = divmod(
+                    distances.argmin(), distances.shape[1])
+                bbox = get_bbox(detections[det_idx], self.frame_shape)
+                x_min, y_min, x_max, y_max = bbox
                 x_cp = int(x_min + (x_max - x_min) / 2)
                 y_cp = int(y_min + (y_max - y_min) / 2)
-                dist = (x-x_cp)**2+(y-y_cp)**2
-                if dist < best_dist and dist < self.max_search_dist:
-                    best_det_idx = i
-                    best_dist = dist
-                    best_cp = (x_cp, y_cp)
-                    best_bbox = (x_min, y_min, x_max, y_max)
+                self.tracks[mapping[track_idx]]['last_bbox'] = bbox
+                self.tracks[mapping[track_idx]]['points'].append((x_cp, y_cp))
+                self.tracks[mapping[track_idx]]['dead_frames'] = 0
+                distances[track_idx, :] = np.inf
+                distances[:, det_idx] = np.inf
+                updated_tracks.append(track_idx)
+                assigned_detections.append(det_idx)
 
-            # If no update found for this track, increase it's dead_frames
-            if best_det_idx == -1:
-                self.tracks[track_id]['dead_frames'] += 1
-            else:
-                unassigned_detections.pop(best_det_idx)
-                self.tracks[track_id]['points'].append(best_cp)
-                self.tracks[track_id]['last_bbox'] = best_bbox
-                self.tracks[track_id]['dead_frames'] = 0
+        # Update count of dead frames for lost tracks and delete old ones
+        for i in mapping.keys():
+            if i in updated_tracks:
+                continue
+            self.tracks[mapping[i]]['dead_frames'] += 1
+            if self.tracks[mapping[i]]['dead_frames'] > self.ttl:
+                self.tracks.pop(mapping[i])
 
-        # Delete all dead tracks
-        for i in to_delete_idxs:
-            self.tracks.pop(i)
-
-        # For every unassigned detection left, create new track
-        for det in unassigned_detections:
-            x_min, y_min, x_max, y_max = get_bboxes(det, self.frame_shape)
+        # Create new tracks for unassigned detections
+        for i in range(len(detections)):
+            if i in assigned_detections:
+                continue
+            x_min, y_min, x_max, y_max = get_bbox(
+                detections[i], self.frame_shape)
             bbox = (x_min, y_min, x_max, y_max)
             x_cp = int(x_min + (x_max - x_min) / 2)
             y_cp = int(y_min + (y_max - y_min) / 2)

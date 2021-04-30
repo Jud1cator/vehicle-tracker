@@ -15,16 +15,16 @@ def main():
     tracker = Tracker((640, 480))
 
     while True:
-        try:
-            ret, frame = video_stream.read()
-            if not ret:
-                break
-            detections = detect_vehicles(detector, frame)
-            tracker.update(detections)
-            frame = tracker.draw_tracks(frame)
-            video_writer.write(frame)
-        except KeyboardInterrupt:
-            video_writer.release()
+    # for i in range(15*20):
+        ret, frame = video_stream.read()
+        if not ret:
+            break
+        detections = detect_vehicles(detector, frame)
+        tracker.update(detections)
+        # input()
+        frame = tracker.draw_tracks(frame)
+        video_writer.write(frame)
+    video_writer.release()
 
 
 if __name__ == "__main__":
