@@ -1,26 +1,27 @@
-import matplotlib.pyplot as plt
 import cv2
-import numpy as np
 
 from utils import (
     get_detector,
-    detect_vehicles,
-    draw_detections
+    detect_vehicles
 )
+from tracker import Tracker
 
 
 def main():
     detector = get_detector()
     video_stream = cv2.VideoCapture("/video/video.mkv")
-    fourcc = cv2.VideoWriter_fourcc(*"MP4V")
+    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
     video_writer = cv2.VideoWriter("/output/output.mp4", fourcc, 15, (640, 480))
+    tracker = Tracker((640, 480))
+
     while True:
         try:
             ret, frame = video_stream.read()
             if not ret:
                 break
             detections = detect_vehicles(detector, frame)
-            frame = draw_detections(frame, detections)
+            tracker.update(detections)
+            frame = tracker.draw_tracks(frame)
             video_writer.write(frame)
         except KeyboardInterrupt:
             video_writer.release()
